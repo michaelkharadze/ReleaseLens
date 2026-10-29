@@ -1,0 +1,17 @@
+{
+  "name": "releaselens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Release-aware regression triage with source-backed engineering briefs",
+  "engines": { "node": ">=24.0.0" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs && node src/server.ts",
+    "start": "node src/server.ts",
+    "test": "node --test tests/*.test.ts",
+    "eval": "node scripts/evaluate.ts",
+    "check": "npm test && npm run eval && npm run build"
+  },
+  "license": "MIT"
+}
