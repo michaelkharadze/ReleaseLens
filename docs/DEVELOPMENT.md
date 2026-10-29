@@ -31,3 +31,7 @@ Do not manufacture months of activity or pretend the software has users. A coher
 - Add incremental synchronization for edited GitHub issues and rate-limit resume checkpoints.
 - Add authenticated tenant isolation before exposing the server beyond loopback.
 - Evaluate AI hypotheses for semantic faithfulness and measure actual cost/latency.
+
+## LangChain RAG upgrade
+
+`feat/langchain-rag` adds a persistent vector index, local model adapters, the RAG HTTP API and UI, model setup commands, an opt-in live benchmark, and updated portfolio wording. The upgrade uses actual model calls and retains failed development runs. The original four merged PRs remain intact.

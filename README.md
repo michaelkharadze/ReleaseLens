@@ -1,72 +1,103 @@
 # ReleaseLens
 
-Find the customer problems that surfaced after a release, inspect the evidence, and turn a suspected regression into a reviewable engineering brief.
+**Release-aware customer triage with a tested LangChain RAG pipeline.** Find which problems became more common after a deployment, ask questions about the supporting evidence, and export an engineering brief.
 
-## Why it exists
-
-Customer-insight tools usually organize feedback by topic. ReleaseLens organizes the investigation around a deployment: what changed, which problems increased, and which original reports support that signal? Temporal association is a lead for investigation, not proof of a cause.
-
-Customer feedback can rise simply because overall report volume rose. ReleaseLens compares the **share of unique reporting accounts** in equal windows around a deployment, groups related reports, ranks new or increasing topics, and links them to potentially related release changes. A brief includes the original reports, counts, and a reproduction checklist.
+[Public demo](https://releaselens-mk.windycandy18.chatgpt.site) · [RAG architecture and evaluation](docs/RAG.md) · [API](docs/API.md) · [Portfolio notes](docs/PORTFOLIO.md)
 
 ![ReleaseLens investigation workspace](docs/dashboard.jpg)
 
-## Run locally
+## What it does
 
-Requires **Node.js 24+**. The application has no runtime package dependencies. Development tools are installed with npm.
+- Imports support reports and public GitHub issues with validated, idempotent ingestion.
+- Compares the share of unique reporting accounts in equal UTC windows around a release.
+- Groups related problems, ranks new/rising topics, and preserves original evidence in engineering briefs.
+- Runs **retrieval-augmented generation with LangChain**, local **Nomic embeddings**, a persistent **SQLite vector store**, and **Qwen3 4B through Ollama**.
+- Shows retrieved chunks, cosine scores, source citations, cache usage, model tokens, and request timings.
+- Applies retrieval thresholds, answerability checks, constrained JSON generation, and independent source/quote validation.
+- Includes offline contract tests, a live-model development benchmark, visible failures from earlier iterations, and GitHub Actions.
+
+## Run the application
+
+Requires **Node.js 24+**. Install dependencies and start the application:
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open [http://127.0.0.1:4317](http://127.0.0.1:4317). The first run seeds **41 authored, synthetic reports** across six problem areas and two example releases. Data and investigation notes persist in `.data/releaselens.sqlite`.
+Open [http://127.0.0.1:4317](http://127.0.0.1:4317). A new database seeds **41 authored synthetic reports** and two releases. Reports, reviews, audit events, cached embeddings, and RAG runs persist in `.data/releaselens.sqlite`.
 
-```sh
-npm test              # Unit and real HTTP integration tests
-npm run typecheck     # Check server, shared core, and browser TypeScript
-npm run eval          # Recompute the 24-pair development benchmark
-npm run build         # Build the static browser demo
-```
-
-For a clean workspace, start with an unused database and disable seeding:
+The analytics and review workflow runs without a model. For a clean workspace:
 
 ```sh
 SEED_DEMO=false DATABASE_PATH=.data/your-project.sqlite npm run dev
 ```
 
-Add a release with its actual UTC deployment time, then import JSON reports or public GitHub issues. JSON import accepts an array of reports or an exported workspace. The import dialog can download an example. IDs are preserved; repeat imports skip existing IDs.
+## Enable live local RAG
 
-## What works
+No hosted API key is required. The initial downloads are approximately 2.8 GB for Qwen3 4B and Nomic embeddings, plus the Ollama runtime. Models stay on your computer and are excluded from Git.
 
-- **Release comparison:** half-open UTC windows, distinct reporting-account counts, report-share normalization, and finite ratios for zero-count baselines.
-- **Deterministic grouping:** token normalization and binary cosine similarity; complete-link grouping limits chains of loosely related reports.
-- **Traceable evidence:** original text, source identifiers, optional HTTPS links, and exportable Markdown engineering briefs.
-- **Triage workflow:** investigating, confirmed, and dismissed states, release-scoped notes, and a server-side audit trail.
-- **Ingestion:** atomic validated report batches, idempotent IDs, JSON upload, and background public GitHub imports with persisted job status.
-- **Evaluation:** reproducible labeled pairs, per-case failures, a dataset checksum, a documented F1 regression gate, and GitHub Actions.
-- **Optional AI hypotheses:** Together-compatible structured output with validated source IDs, bounded input, and no automatic issue publication.
+```sh
+cp .env.example .env
+npm run models:setup
+npm run models:serve
+```
 
-## Architecture
+Keep the model server running. In another terminal:
+
+```sh
+npm run models:pull
+npm run dev
+```
+
+Open **RAG lab**, type a question, and select **Retrieve evidence and answer**. The compatibility **Generate an AI hypothesis** action now uses the same RAG pipeline. The earlier direct Together adapter has been replaced.
+
+Automatic runtime setup supports macOS and verifies a pinned official Ollama release checksum. On Linux/Windows, install [Ollama](https://ollama.com/download) first, then use the serve/pull commands. Configuration lives in the ignored `.env`; see [.env.example](.env.example).
+
+## RAG architecture
 
 ```mermaid
 flowchart LR
-  A[JSON / public GitHub issues] --> B[Validated ingestion]
-  B --> C[(SQLite: reports, releases, jobs, reviews, audit)]
-  C --> D[Shared TypeScript analysis]
-  D --> E[Investigation workspace]
-  E --> F[Reviewed Markdown brief]
-  D -. optional .-> G[Together model]
-  G --> H[Source-ID validation]
-  H --> E
+  A[Reports + selected release notes] --> B[LangChain recursive text splitter]
+  B --> C[Nomic embedding model]
+  C --> D[(SQLite vectors + embedding cache)]
+  Q[Release-scoped question] --> E[LangChain vector-store retriever]
+  D --> E
+  E --> F[Relevance + missing-fact guards]
+  F --> G[Qwen3 answerability check]
+  G --> H[Constrained JSON answer + citations]
+  H --> I[Independent source-ID and verbatim-quote validation]
+  I --> J[Answer + evidence trace + audit record]
 ```
 
-`src/core/` is shared between the browser and Node server. `src/store.ts` owns SQLite transactions. `src/server.ts` exposes the API and static assets. `src/github.ts` performs bounded imports. `src/model.ts` validates optional model output. `src/web/app.ts` implements the workspace. The build strips TypeScript with Node's built-in API; it does not bundle a UI framework.
+Chunks are 900 characters with 120-character overlap. Retrieval searches only the selected release window, uses exact cosine similarity, and returns up to four distinct evidence texts by default. The embedding cache is keyed by content and the installed model digest. A 0.60 similarity threshold is a development-calibrated heuristic, not a confidence score.
 
-The **local application** uses the HTTP API and SQLite. The **hosted static demo** runs the same analysis in the browser and saves report data and review notes in browser storage. It does not provide a shared database, background GitHub jobs, or server-side AI calls. The interface identifies its active mode.
+See [RAG.md](docs/RAG.md) for implementation details, measurements, and limits.
 
-## How a signal is calculated
+## Validation
 
-For each topic, count unique reporting accounts before and after the release. Divide by all unique reporting accounts in the corresponding window. The displayed ratio uses a 0.5 pseudocount:
+```sh
+npm run check        # TypeScript, offline tests, grouping evaluation, browser build
+npm run eval:rag     # Opt-in live model benchmark; start Ollama and pull models first
+```
+
+The offline tests cover transactional imports, release boundaries, vector persistence across restart, cache invalidation, scope isolation, invalid embeddings, provider errors/timeouts, LangChain HTTP transport, structured output, citation rejection, and UI escaping. They do not download or invoke models in normal CI.
+
+The live benchmark invokes actual local embedding and chat models through the application's HTTP API. It records model digests, runtime versions, timings, token counts, retrieved sources, reference checks, abstentions, and an instruction-injection case. Results are in [evaluation/rag-results.json](evaluation/rag-results.json). Earlier failed development runs are retained alongside the current result.
+
+All evaluation fixtures are **authored synthetic development data**, not held-out or real-customer evidence. Exact citations do not prove semantic faithfulness. No production adoption, customer time savings, or incident reduction has been measured.
+
+The original lexical grouping benchmark remains separate: 24 pairs, 66.7% precision, 83.3% recall, and 74.1% F1. Its metrics do not describe RAG answer quality.
+
+## Hosted demo versus local application
+
+The **public static demo** runs release analytics in the browser, saves changes in browser storage, and lets visitors inspect **recorded outputs from real local-model benchmark requests**. It clearly labels recorded results and does not pretend to run live inference.
+
+The **local full-stack application** adds SQLite persistence, GitHub import jobs, and live RAG questions against local Ollama models. The public website cannot access the model server on your Mac.
+
+## How release signals work
+
+For each topic, count distinct reporting accounts before and after a deployment. Normalize by all reporting accounts in the corresponding window, using a 0.5 pseudocount:
 
 ```text
 ratio = ((topic_after + 0.5) / (all_after + 1))
@@ -74,40 +105,12 @@ ratio = ((topic_after + 0.5) / (all_after + 1))
 priority = topic_after × max(0, log2(ratio))
 ```
 
-A topic with no prior reports is labeled new; otherwise, a ratio of at least 1.5 is rising. These are **heuristics**, not statistical confidence estimates. Reporting accounts are not an exposure denominator or a count of active users. GitHub logins are used as account proxies, not organizations. A release-note match is lexical overlap, not proof of a root cause.
+Both windows need reporting accounts; otherwise the system reports insufficient data. A topic absent before is new, and a ratio of at least 1.5 is rising. These are triage heuristics. Reporting accounts are not an active-user exposure denominator; a GitHub login is an account proxy. Timing and release-note overlap do not prove causality.
 
-When either entire comparison window has no reporting accounts, the engine returns **insufficient data** and omits the ratio. A zero-count topic inside an otherwise populated window can still be compared using the pseudocount.
+## Limits and project history
 
-## Evaluation and current limits
+The server is a single-user loopback application. Production multi-tenant authentication, exposure denominators, incremental issue synchronization, durable cluster identities, and ANN-scale vector retrieval remain future work. GitHub imports inspect at most 300 records per job, report batches accept at most 1,000 records, and RAG indexes are limited to 5,000 chunks per release window.
 
-The authored 24-pair development set includes paraphrases, unrelated reports, and same-topic reports with different symptoms. The initial baseline achieved **66.7% precision, 83.3% recall, and 74.1% F1**, with five false positives and two false negatives. Reproduce it with `npm run eval`; inspect every case in `evaluation/results.json` or the Evaluation view.
+See [development history](docs/DEVELOPMENT.md), [validation record](docs/VALIDATION.md), and [résumé wording](docs/PORTFOLIO.md). The history contains actual feature commits and PRs with their real timestamps.
 
-This is a small **synthetic development benchmark**, not a held-out or customer-validated result. It shows the baseline's weaknesses: lexical grouping misses semantic paraphrases and can merge distinct symptoms. The F1 gate of 0.65 detects major regressions; it is not a production readiness criterion. No customer time savings, business impact, or live-model accuracy has been measured.
-
-Complete-link grouping has quadratic cost and is intentionally bounded to small workspaces; import batches allow at most 1,000 records and GitHub jobs inspect at most 300 issue records. Existing source IDs are skipped rather than synchronized. Later-imported IDs can change a group's representative and orphan an earlier review; a production version should persist cluster identities. The local server binds to loopback and rejects cross-origin requests; it is a single-user development application, without production authentication or tenant isolation.
-
-## Optional model analysis
-
-Copy `.env.example` to `.env`, select a model available in your Together account, and run:
-
-```sh
-node --env-file=.env scripts/build.mjs
-node --env-file=.env src/server.ts
-```
-
-Setting `TOGETHER_API_KEY` and `TOGETHER_MODEL` enables **Generate an AI hypothesis** in the signal detail. It sends the selected reports to Together and may incur provider charges. No model call occurs on startup. Unknown citation IDs and malformed responses are rejected. Valid IDs do not guarantee the hypothesis faithfully represents the sources; a person must review it. The live provider path has not been exercised without a user-supplied API key.
-
-## Development milestones
-
-1. Release-window analysis and deterministic report grouping.
-2. SQLite storage, validated ingestion, public GitHub imports, and an HTTP API.
-3. An interactive investigation workspace with source evidence and reviewed briefs.
-4. A reproducible evaluation suite, CI, and deployment documentation.
-
-The repository contains focused feature branches and real merge commits created as those stages were implemented. See [development notes](docs/DEVELOPMENT.md) for the milestone sequence and GitHub publication helper. All work retains actual timestamps; there is no fabricated contribution history.
-
-## Portfolio notes
-
-See [project explanation and résumé wording](docs/PORTFOLIO.md) for an interview walkthrough, measured results, and claims that still need real-world validation.
-
-Inspired by the problem space of [Open Customer Insights](https://github.com/Nutlope/open-customer-insights), with an independently implemented release-comparison workflow. No source code has been copied from that project.
+Inspired by the problem space of [Open Customer Insights](https://github.com/Nutlope/open-customer-insights), with an independently implemented release-comparison and RAG workflow. No source code was copied from that project.

@@ -24,4 +24,14 @@ Browser QA identified an empty-before-window bug; the analysis now abstains with
 
 ## Verification limits
 
-The live Together model path requires credentials and has not been exercised. Public GitHub ingestion has a controlled-response test; no live repository import was used to validate retrieval completeness. There is no real customer dataset or production user study. The desktop browser flow was checked; no claim is made that every mobile device, assistive technology, or browser has been tested.
+The original Together adapter was replaced by the local LangChain/Ollama RAG pipeline. The live RAG integration has now been exercised with real models. Public GitHub ingestion has a controlled-response test; no live repository import was used to validate retrieval completeness. There is no real customer dataset or production user study. The desktop browser flow was checked; no claim is made that every mobile device, assistive technology, or browser has been tested.
+
+## LangChain RAG upgrade validation
+
+- 30 offline automated tests cover the original workflow and RAG index persistence across restart, cache invalidation, vector validation, metadata scope isolation, atomic failed-index updates, retrieval abstention, constrained source/quote rejection, typed-fact guards, provider errors/timeouts, real LangChain HTTP transport, and UI escaping.
+- The final live benchmark passed 13/13 reference checks with Qwen3 4B and Nomic embeddings, invoked through the application HTTP API. Nine answerable queries produced 100% retrieval hit rate at 4 and 0.944 MRR. Four unsupported questions abstained.
+- The live result records installed model digests, local runtime versions, tokens, latency, retrieved sources, and the actual generated outputs.
+- Earlier failed runs and a manual-review note remain committed to show the limits of coarse reference checks and the changes prompted by live testing.
+- The desktop browser submitted a live CSV question and displayed a generated answer with two validated report citations and the actual inference trace. A missing commit-SHA question displayed an abstention with zero generation tokens. The positive flow is captured in `docs/rag.jpg`.
+
+These are synthetic development results. Citation integrity does not establish semantic entailment or causal correctness. No hosted Together/OpenAI provider is used in the current RAG workflow.

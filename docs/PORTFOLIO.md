@@ -1,39 +1,35 @@
 # Explaining ReleaseLens
 
-## Project pitch
-
-ReleaseLens helps an engineer investigate what customers started reporting after a deployment. It groups reports, compares their share of reporting accounts before and after the release, and assembles a brief with original evidence and a reproduction checklist.
-
 ## Suggested résumé bullets
 
-- Built a TypeScript and SQLite release-triage application that ingests public GitHub issues and support reports, compares pre/post-release report frequencies, and produces source-backed engineering briefs.
-- Implemented idempotent imports, background job tracking, transactional persistence, release-scoped investigation notes, and a shared browser/server analysis engine.
-- Created a reproducible 24-pair development evaluation with per-case failure analysis and CI regression checks; measured 74.1% F1 for the initial lexical grouping baseline on synthetic cases.
+- Built a release-aware RAG application with **TypeScript, Node.js, LangChain, and SQLite**, connecting customer reports and release notes to source-backed engineering investigations.
+- Implemented **semantic retrieval** with Nomic embeddings, recursive chunking, release-window metadata filtering, and a persistent vector cache keyed by content and model revision; measured **100% hit rate at 4 and 0.94 MRR on nine synthetic reference queries**.
+- Integrated local **Qwen3 4B through Ollama** with structured JSON generation, constrained citations, answerability checks, and deterministic missing-fact guards; passed **13/13 live acceptance cases**, including four abstentions and an adversarial report.
+- Validated the ingestion and AI workflows with **30 automated tests**, covering vector persistence, cache invalidation, scope isolation, malformed output, timeouts, HTTP integration, and UI escaping; automated checks through **GitHub Actions CI**.
 
-Use the evaluation bullet only with its synthetic-development qualifier. Do not claim production users, incident reduction, cost savings, or commercial adoption without collecting that evidence.
+The retrieval and live acceptance metrics are from an authored synthetic development benchmark, not production or held-out accuracy. Citation integrity is not a proof of semantic faithfulness. Do not claim customer adoption, time savings, or incident reduction without measuring them. LangChain is implemented; LangGraph is not.
 
-## A five-minute demo
+## Five-minute interview walkthrough
 
-1. Open the release overview for v2.8.0. The 41 synthetic reports form six topics.
-2. Show why nine login complaints represent nine accounts, while repeated reports from the same account count once.
-3. Select the CSV export signal. Explain its before/after counts and normalized ratio.
-4. Inspect the release-note association and source quotes. Explain why the suspected connection is not a proven cause.
-5. Add an investigation note, save it, and reload to demonstrate persistence.
-6. Generate a brief and inspect its original source IDs and reproduction checklist.
-7. Open Evaluation. Discuss a hard negative that merged incorrectly and a semantic paraphrase the baseline missed.
+1. Open the release overview for v2.8.0 and explain why report share and unique accounts are more useful than raw complaint counts.
+2. Select a suspected regression and inspect the original source text and the release-note association.
+3. Open RAG lab. In the local app, ask an evidence question and show retrieved chunks, source scores, quotes, cache hits, tokens, and timings. The public demo clearly replays recorded live results.
+4. Ask for an unsupported commit SHA or HTTP status code and show abstention instead of an invented identifier.
+5. Explain the difference between source-ID/quote validity and semantic faithfulness, using the retained failed development runs.
+6. Show GitHub Actions and the committed evaluation output. Explain why a small synthetic benchmark is useful for regression checks but insufficient to establish real-world accuracy.
 
-## Engineering decisions worth discussing
+## Decisions to discuss
 
-**Normalization:** Raw complaint volume can rise with overall traffic. Normalizing by reporting accounts helps, but remains biased because the app does not know how many users were exposed to each release. A production version should ingest active-account or request counts.
+**RAG instead of large prompt stuffing:** retrieve question-relevant chunks from a release scope, cache dense embeddings, and expose the retrieved evidence. Metadata filtering prevents searching unrelated release windows.
 
-**Grouping:** A deterministic baseline is cheap and reproducible. Complete-link grouping reduces bridge-report chaining, at the expense of recall and quadratic cost. An embedding model should be evaluated on held-out, real, manually labeled data before replacing it.
+**Local model validation:** actual Ollama embedding/chat requests exercise the deployed local API without a hosted provider key. Model digests and runtime versions make the result inspectable.
 
-**Evidence:** The program builds counts and quotes directly from stored records. A model may generate a tentative hypothesis, but its citation IDs must exist. Semantic entailment is a separate problem from ID validity.
+**Grounding:** constrain citations to real retrieved excerpts, validate independently, and add answerability checks. Exact quotes do not guarantee every answer claim is entailed.
 
-**Persistence:** SQLite transactions prevent partially validated batches. Source IDs make retries safe. Job state survives restart; an interrupted job is marked failed, and the user can retry without duplicating existing records.
+**Persistence:** validate a complete import before writing, use source IDs for retry safety, and replace a vector index atomically after successful embedding. Model/content fingerprints invalidate stale embeddings.
 
-**Deployment:** The browser-only demo is easy to share and needs no secrets. The local app adds a database and GitHub imports. Production multi-user hosting would require authenticated tenancy and a durable server runtime.
+**Deployment:** the public demo is static and replays real benchmark outputs. The live backend runs locally; production multi-user inference would require authenticated tenancy and a hosted inference service.
 
 ## Next evidence to collect
 
-Evaluate 100–200 real, permissioned reports labeled independently by two people. Keep a held-out set. Compare lexical grouping with embeddings using pairwise precision/recall and cluster-level metrics. Time actual triage sessions before claiming time savings. Add release exposure counts before interpreting frequency as incidence.
+Use permissioned real reports labeled independently by two people. Create a held-out set. Compare embeddings and retrieval settings using hit rate, MRR, recall, answerability precision/recall, and human-rated faithfulness. Time actual triage sessions before claiming efficiency gains. Add release exposure counts before interpreting complaint share as incidence.
