@@ -1,3 +1,5 @@
+import { ragView, type RagBenchmark } from './rag-view.ts';
+import type { RagResult } from '../rag/pipeline.ts';
 import { analyze, engineeringBrief } from '../core/analysis.ts';
 import { demoWorkspace } from '../core/demo.ts';
 import { validateReport, validateRelease } from '../core/validation.ts';
@@ -14,6 +16,12 @@ let mode = 'browser',
   selected = '',
   query = '';
 let evaluation: any = null;
+let ragBenchmark: RagBenchmark | null = null,
+  ragResult: RagResult | null = null,
+  ragQuestion = '',
+  ragBusy = false,
+  ragError = '',
+  ragEnabled = false;
 let evidenceFilter: Set<string> | null = null;
 const KEY = 'releaselens.workspace.v1';
 const escape = (value: unknown) =>
@@ -94,6 +102,7 @@ const names: Record<string, string> = {
   evidence: 'Evidence library',
   releases: 'Releases',
   evaluation: 'Evaluation lab',
+  rag: 'RAG lab',
 };
 
 function chart(analysis: Analysis) {
@@ -179,17 +188,18 @@ function render() {
     evidence: 'Every signal starts with something a customer actually said.',
     releases: 'The changes that give customer feedback its context.',
     evaluation: 'Measure the baseline. Inspect the failures. Improve with evidence.',
+    rag: 'Ask a question, follow the retrieved evidence, and inspect the model’s answer.',
   };
   root.innerHTML = `<div class="shell"><aside class="sidebar"><div class="brand"><img src="/favicon.svg" alt="">ReleaseLens</div><div class="workspace-switch"><span class="workspace-avatar">M</span><div>Michael’s workspace<small>Engineering / release health</small></div></div><div class="nav-label">Workspace</div><nav class="nav" aria-label="Main navigation">${Object.entries(
     names,
   )
     .map(
       ([key, name]) =>
-        `<button data-page="${key}" class="${page === key ? 'active' : ''}" ${page === key ? 'aria-current="page"' : ''}>${icon({ signals: 'signal', evidence: 'reports', releases: 'release', evaluation: 'eval' }[key]!)}${name.replace('Release overview', 'Overview').replace('Evidence library', 'Evidence').replace('Evaluation lab', 'Evaluation')} ${key === 'signals' ? `<span class="count">${analysis.clusters.filter((c) => c.signal === 'new' || c.signal === 'rising').length}</span>` : ''}</button>`,
+        `<button data-page="${key}" class="${page === key ? 'active' : ''}" ${page === key ? 'aria-current="page"' : ''}>${icon({ signals: 'signal', evidence: 'reports', releases: 'release', evaluation: 'eval', rag: 'search' }[key]!)}${name.replace('Release overview', 'Overview').replace('Evidence library', 'Evidence').replace('Evaluation lab', 'Evaluation')} ${key === 'signals' ? `<span class="count">${analysis.clusters.filter((c) => c.signal === 'new' || c.signal === 'rising').length}</span>` : ''}</button>`,
     )
     .join(
       '',
-    )}</nav><div class="side-bottom"><div class="side-note"><strong>A little context goes a long way.</strong>Connect what shipped to what customers are reporting. Follow the evidence.</div><div class="profile"><span class="avatar">MK</span><div>Michael Kharadze<small>Personal project workspace</small></div></div></div></aside><main class="main"><header class="topbar"><div class="crumb">Workspace <span>/</span> <strong>${names[page]}</strong></div><div class="top-status"><span><i class="status-dot"></i>${mode === 'sqlite' ? 'SQLite connected' : 'Browser demo'}</span><span class="badge">${workspace.reports.every((r) => r.id.startsWith('R-')) ? 'Synthetic demo data' : 'Custom workspace'}</span></div></header><div class="content"><div class="page-head"><div><div class="eyebrow">${page === 'signals' ? 'FROM RELEASE TO RESOLUTION' : 'AN EVIDENCE-FIRST WORKSPACE'}</div><h1>${names[page]}</h1><p>${subtitles[page]}</p></div><div class="head-actions">${page === 'releases' ? '<button class="button primary" data-action="add-release">' + icon('plus') + 'Add release</button>' : `<button class="button" data-action="export">${icon('download')}Export workspace</button><button class="button primary" data-action="import">${icon('plus')}Import reports</button>`}</div></div>${page === 'signals' ? signals(analysis) : page === 'evidence' ? evidencePage() : page === 'releases' ? releasePage() : evalPage()}<footer class="footer"><span>ReleaseLens <span aria-hidden="true">✳</span> Built for the investigation after the deploy.</span><span>${mode === 'sqlite' ? 'Local application · persisted in SQLite' : 'Interactive demo · saved in this browser'} · ${workspace.reports.length} reports</span></footer></div></main></div>`;
+    )}</nav><div class="side-bottom"><div class="side-note"><strong>A little context goes a long way.</strong>Connect what shipped to what customers are reporting. Follow the evidence.</div><div class="profile"><span class="avatar">MK</span><div>Michael Kharadze<small>Personal project workspace</small></div></div></div></aside><main class="main"><header class="topbar"><div class="crumb">Workspace <span>/</span> <strong>${names[page]}</strong></div><div class="top-status"><span><i class="status-dot"></i>${mode === 'sqlite' ? 'SQLite connected' : 'Browser demo'}</span><span class="badge">${workspace.reports.every((r) => r.id.startsWith('R-')) ? 'Synthetic demo data' : 'Custom workspace'}</span></div></header><div class="content"><div class="page-head"><div><div class="eyebrow">${page === 'signals' ? 'FROM RELEASE TO RESOLUTION' : 'AN EVIDENCE-FIRST WORKSPACE'}</div><h1>${names[page]}</h1><p>${subtitles[page]}</p></div><div class="head-actions">${page === 'releases' ? '<button class="button primary" data-action="add-release">' + icon('plus') + 'Add release</button>' : `<button class="button" data-action="export">${icon('download')}Export workspace</button><button class="button primary" data-action="import">${icon('plus')}Import reports</button>`}</div></div>${page === 'signals' ? signals(analysis) : page === 'evidence' ? evidencePage() : page === 'releases' ? releasePage() : page === 'rag' ? ragView({ benchmark: ragBenchmark, result: ragResult, question: ragQuestion, live: ragEnabled, busy: ragBusy, error: ragError, releaseId }) : evalPage()}<footer class="footer"><span>ReleaseLens <span aria-hidden="true">✳</span> Built for the investigation after the deploy.</span><span>${mode === 'sqlite' ? 'Local application · persisted in SQLite' : 'Interactive demo · saved in this browser'} · ${workspace.reports.length} reports</span></footer></div></main></div>`;
   bind();
 }
 
@@ -199,6 +209,37 @@ function showModal(html: string) {
   modal.showModal();
 }
 function bind() {
+  root.querySelector('#rag-case')?.addEventListener('change', (e) => {
+    const item = ragBenchmark?.cases.find((c) => c.id === (e.target as HTMLSelectElement).value);
+    if (item) {
+      ragQuestion = item.question;
+      ragResult = ragEnabled ? null : item.result;
+      ragError = ragEnabled ? '' : item.error || '';
+      render();
+    }
+  });
+  root.querySelector('#rag-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    ragQuestion = String(new FormData(e.target as HTMLFormElement).get('question'));
+    ragBusy = true;
+    ragResult = null;
+    ragError = '';
+    render();
+    try {
+      ragResult = await api('/api/rag/ask', {
+        question: ragQuestion,
+        releaseId,
+        windowDays: days,
+        k: 4,
+      });
+    } catch (error) {
+      ragError = (error as Error).message;
+    } finally {
+      ragBusy = false;
+      render();
+    }
+  });
+
   root.querySelectorAll<HTMLElement>('[data-page]').forEach(
     (el) =>
       (el.onclick = () => {
@@ -459,6 +500,7 @@ try {
     workspace = data;
     mode = data.mode;
     modelEnabled = data.modelEnabled;
+    ragEnabled = data.ragEnabled;
   } else throw new Error('Static demo');
 } catch {
   try {
@@ -481,5 +523,11 @@ try {
   if (response.ok) evaluation = await response.json();
 } catch {
   /* The app can run before benchmarks are built. */
+}
+try {
+  const response = await fetch('/rag-evaluation.json');
+  if (response.ok) ragBenchmark = await response.json();
+} catch {
+  /* Live RAG does not require a saved benchmark. */
 }
 render();
