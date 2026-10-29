@@ -33,13 +33,18 @@ test('LangChain Ollama transport and RAG HTTP endpoint embed, generate, validate
       const human = body.messages.find((m: any) => m.role === 'user').content as string;
       const sources = JSON.parse(human.split('EVIDENCE (JSON):\n')[1]);
       const source = sources[0];
-      const output = {
-        answer: 'The CSV export truncates.',
-        abstained: false,
-        citations: [
-          { chunkId: bad ? 'invented' : source.chunkId, quote: source.text.split('\n')[0] },
-        ],
-      };
+      const output = body.format.properties?.answerable
+        ? {
+            reason: 'The supplied source explicitly describes the export symptom.',
+            answerable: true,
+          }
+        : {
+            answer: 'The CSV export truncates.',
+            abstained: false,
+            citations: [
+              { chunkId: bad ? 'invented' : source.chunkId, quote: source.text.split('\n')[0] },
+            ],
+          };
       res.setHeader('Content-Type', 'application/x-ndjson');
       res.end(
         JSON.stringify({
@@ -87,7 +92,7 @@ test('LangChain Ollama transport and RAG HTTP endpoint embed, generate, validate
     assert.equal(response.status, 200);
     const result = await response.json();
     assert.equal(result.citations[0].sourceId, 'r1');
-    assert.equal(result.trace.usage.total_tokens, 135);
+    assert.equal(result.trace.usage.total_tokens, 270);
     assert.ok(
       requests.some(
         (r) =>
@@ -102,7 +107,7 @@ test('LangChain Ollama transport and RAG HTTP endpoint embed, generate, validate
           r.body.input.some((t: string) => t.startsWith('search_query:')),
       ),
     );
-    const chat = requests.find((r) => r.path === '/api/chat')!;
+    const chat = requests.find((r) => r.path === '/api/chat' && r.body.format.anyOf)!;
     assert.ok(chat.body.format.anyOf);
     assert.equal(chat.body.think, false);
     assert.equal((await (await fetch(root + '/api/rag/runs')).json()).length, 1);
