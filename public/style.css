@@ -15,6 +15,38 @@
   --paper: #fff;
   --lime: #dcebbf;
 }
+.rag-badge {
+  display: inline-block;
+  margin: 0 0 12px;
+}
+.rag-metrics {
+  margin-bottom: 18px;
+}
+.rag-answer {
+  font-size: 14px !important;
+  color: #34513e !important;
+  white-space: pre-wrap;
+}
+.rag-source {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.rag-source summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: #4f7156;
+}
+.rag-source p {
+  white-space: pre-wrap;
+}
+.rag-source small {
+  font-size: 9px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.method code {
+  overflow-wrap: anywhere;
+}
 * {
   box-sizing: border-box;
 }
