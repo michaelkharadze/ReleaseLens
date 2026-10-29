@@ -22,6 +22,8 @@ jobs:
         run: npm run eval
       - name: Build the browser application
         run: npm run build
+      - name: Build and validate the hosted Worker
+        run: npm run build:hosted
       - uses: actions/upload-artifact@v4
         with:
           name: evaluation-and-demo
