@@ -8,9 +8,11 @@ import { demoWorkspace } from './core/demo.ts';
 import { analyze, engineeringBrief } from './core/analysis.ts';
 import { importGithub } from './github.ts';
 import { generateHypothesis } from './model.ts';
+import type { RagService } from './rag/pipeline.ts';
+import { localRag } from './rag/local-models.ts';
 
 const MAX_BODY = 2_000_000;
-export function createApp(store: Store, options = { allowModel: false }) {
+export function createApp(store: Store, options: { allowModel?: boolean; rag?: RagService } = {}) {
   return createServer(async (req, res) => {
     const send = (code: number, body: unknown) => {
       res.writeHead(code, {
@@ -50,12 +52,45 @@ export function createApp(store: Store, options = { allowModel: false }) {
         return send(200, {
           ...store.workspace(),
           mode: 'sqlite',
-          modelEnabled: options.allowModel,
+          modelEnabled: Boolean(options.rag) && options.allowModel !== false,
+          ragEnabled: Boolean(options.rag),
         });
       if (req.method === 'GET' && url.pathname === '/api/analysis')
         return send(200, investigation());
       if (req.method === 'GET' && url.pathname === '/api/audit')
         return send(200, store.db.prepare('SELECT * FROM audit ORDER BY id DESC LIMIT 100').all());
+      if (req.method === 'POST' && url.pathname === '/api/rag/ask') {
+        const input = await body();
+        if (!options.rag)
+          return send(409, {
+            error:
+              'Enable local RAG with RAG_ENABLED=true and start Ollama. See the setup instructions.',
+          });
+        if (typeof input.releaseId !== 'string') throw new Error('Provide a releaseId');
+        return send(
+          200,
+          await options.rag.ask({
+            question: input.question,
+            releaseId: input.releaseId,
+            windowDays: input.windowDays,
+            k: input.k,
+          }),
+        );
+      }
+      if (req.method === 'GET' && url.pathname === '/api/rag/runs') {
+        const exists = store.db
+          .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='rag_runs'")
+          .get();
+        return send(
+          200,
+          exists
+            ? store.db
+                .prepare('SELECT payload FROM rag_runs ORDER BY created_at DESC LIMIT 20')
+                .all()
+                .map((row) => JSON.parse(row.payload as string))
+            : [],
+        );
+      }
       if (req.method === 'POST' && url.pathname === '/api/reports') {
         const input = await body();
         if (!Array.isArray(input)) throw new Error('Expected an array of reports');
@@ -117,10 +152,18 @@ export function createApp(store: Store, options = { allowModel: false }) {
         if (req.method === 'GET' && url.pathname === '/api/brief')
           return send(200, { markdown: engineeringBrief(cluster, analysis) });
         if (req.method === 'POST' && url.pathname === '/api/hypothesis') {
-          if (!options.allowModel)
+          if (!options.rag || options.allowModel === false)
             return send(409, { error: 'Model integration is not configured' });
           await body();
-          return send(200, await generateHypothesis(cluster));
+          return send(
+            200,
+            await generateHypothesis(
+              cluster,
+              options.rag,
+              analysis.release.id,
+              analysis.windowDays,
+            ),
+          );
         }
       }
       if (url.pathname.startsWith('/api/')) return send(404, { error: 'Endpoint not found' });
@@ -174,7 +217,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       });
   }
   const app = createApp(store, {
-    allowModel: Boolean(process.env.TOGETHER_API_KEY && process.env.TOGETHER_MODEL),
+    rag: process.env.RAG_ENABLED === 'true' ? localRag(store) : undefined,
   });
   const port = Number(process.env.PORT || 4317);
   app.listen(port, '127.0.0.1', () => console.log(`ReleaseLens ready at http://127.0.0.1:${port}`));
