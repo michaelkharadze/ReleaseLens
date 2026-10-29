@@ -1,0 +1,235 @@
+{
+  "dataset": "authored-development-pairs-v1",
+  "datasetSha256": "da0f529d80057d4da9e3674d0d1f1ef9d9ab32dd3b9a7b9e22daf1c5f1e2fde3",
+  "pairs": 24,
+  "threshold": 0.36,
+  "precision": 0.6666666666666666,
+  "recall": 0.8333333333333334,
+  "f1": 0.7407407407407408,
+  "falsePositives": 5,
+  "falseNegatives": 2,
+  "latencyMs": 5.492333000000002,
+  "node": "v26.0.0",
+  "platform": "darwin",
+  "synthetic": true,
+  "heldOut": false,
+  "modelCalls": 0,
+  "cases": [
+    {
+      "label": "Refresh token paraphrase",
+      "same": true,
+      "left": "Auth refresh token expiry causes login loop",
+      "right": "Login loops when the auth refresh token expires",
+      "score": 0.6172133998483676,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "label": "Truncated export",
+      "same": true,
+      "left": "CSV export truncates at 10000 rows",
+      "right": "CSV export download stops at 10000 rows",
+      "score": 0.6708203932499369,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "label": "Webhook duplicate",
+      "same": true,
+      "left": "Webhook retry delivers duplicate events",
+      "right": "Duplicate webhook events on delivery retry",
+      "score": 0.8,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "label": "Archived search",
+      "same": true,
+      "left": "Archived documents missing from search results",
+      "right": "Search results exclude archived documents",
+      "score": 0.8,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "label": "Invoice payment",
+      "same": true,
+      "left": "Invoice credit card payment declined",
+      "right": "Credit card payment declined on invoice",
+      "score": 1,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "label": "Invite expiry",
+      "same": true,
+      "left": "Workspace invite link expires before acceptance",
+      "right": "Expired workspace invite link prevents acceptance",
+      "score": 0.7302967433402214,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "label": "Alias: signin",
+      "same": true,
+      "left": "Sign-in auth session loops on refresh token expiry",
+      "right": "Login auth session loops on expired refresh token",
+      "score": 0.8571428571428571,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "label": "Alias: exporting",
+      "same": true,
+      "left": "Exporting CSV files fails with timeout",
+      "right": "CSV exports fail with timeout",
+      "score": 0.6708203932499369,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "label": "Semantic gap: authentication",
+      "same": true,
+      "left": "Keeps redirecting me to the sign in page",
+      "right": "Session refresh creates an authentication redirect loop",
+      "score": 0,
+      "predicted": false,
+      "correct": false
+    },
+    {
+      "label": "Semantic gap: download",
+      "same": true,
+      "left": "Downloaded spreadsheet only contains the first ten thousand entries",
+      "right": "CSV export truncates at 10000 rows",
+      "score": 0,
+      "predicted": false,
+      "correct": false
+    },
+    {
+      "label": "Noisy support context",
+      "same": true,
+      "left": "Our enterprise team cannot finish a CSV export because the file download is truncated",
+      "right": "CSV export file download truncated",
+      "score": 0.7453559924999299,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "label": "Mobile upload crash",
+      "same": true,
+      "left": "Mobile photo upload crashes on large images",
+      "right": "Large image upload causes mobile crash",
+      "score": 0.6666666666666666,
+      "predicted": true,
+      "correct": true
+    },
+    {
+      "label": "Different domains",
+      "same": false,
+      "left": "Auth refresh token login loop",
+      "right": "Invoice payment card declined",
+      "score": 0,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "label": "Export versus search",
+      "same": false,
+      "left": "CSV export download truncated",
+      "right": "Archived documents missing from search",
+      "score": 0,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "label": "Webhook versus invite",
+      "same": false,
+      "left": "Webhook retry duplicate events",
+      "right": "Workspace invite link expired",
+      "score": 0,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "label": "Login versus search",
+      "same": false,
+      "left": "Login session auth refresh loop",
+      "right": "Search indexing missing documents",
+      "score": 0,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "label": "Hard negative: different auth symptoms",
+      "same": false,
+      "left": "Auth login session loops when refresh token expires",
+      "right": "Auth login session accepts a revoked token",
+      "score": 0.6172133998483676,
+      "predicted": true,
+      "correct": false
+    },
+    {
+      "label": "Hard negative: export symptom",
+      "same": false,
+      "left": "CSV export stops at 10000 rows",
+      "right": "CSV export includes all rows but wrong timezone",
+      "score": 0.5669467095138409,
+      "predicted": true,
+      "correct": false
+    },
+    {
+      "label": "Hard negative: webhook signature",
+      "same": false,
+      "left": "Webhook retry sends duplicate delivery events",
+      "right": "Webhook delivery signature validation rejects valid events",
+      "score": 0.4629100498862757,
+      "predicted": true,
+      "correct": false
+    },
+    {
+      "label": "Hard negative: search permissions",
+      "same": false,
+      "left": "Search results missing archived documents",
+      "right": "Search results expose private documents",
+      "score": 0.6,
+      "predicted": true,
+      "correct": false
+    },
+    {
+      "label": "Payment versus invite",
+      "same": false,
+      "left": "Credit card invoice payment declined",
+      "right": "Workspace invite acceptance expired",
+      "score": 0,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "label": "Mobile versus server",
+      "same": false,
+      "left": "Mobile photo upload crashes",
+      "right": "Server memory leaks during scheduled backups",
+      "score": 0,
+      "predicted": false,
+      "correct": true
+    },
+    {
+      "label": "Hard negative: expiry domain",
+      "same": false,
+      "left": "Auth refresh token expires login session",
+      "right": "Workspace invite token expires before acceptance",
+      "score": 0.3651483716701107,
+      "predicted": true,
+      "correct": false
+    },
+    {
+      "label": "Hard negative: generic timeout",
+      "same": false,
+      "left": "CSV export timeout on large download",
+      "right": "Login timeout during auth session refresh",
+      "score": 0.18257418583505536,
+      "predicted": false,
+      "correct": true
+    }
+  ]
+}

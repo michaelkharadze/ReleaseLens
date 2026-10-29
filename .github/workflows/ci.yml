@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: Check TypeScript
+        run: npm run typecheck
+      - name: Run unit and HTTP integration tests
+        run: npm test
+      - name: Evaluate grouping baseline
+        run: npm run eval
+      - name: Build the browser application
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-and-demo
+          path: |
+            evaluation/results.json
+            dist/
