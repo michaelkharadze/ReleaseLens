@@ -1,6 +1,6 @@
 # Public live RAG
 
-This upgrade replaces the static-only publication with a Cloudflare Worker serving the existing dashboard and a server-side LangChain RAG endpoint. Publication is pending secure model-key setup and actual provider validation; the current public deployment is preserved until that succeeds.
+This upgrade replaces the static-only publication with a Cloudflare Worker serving the existing dashboard and a server-side LangChain RAG endpoint. Secure key setup completed, but OpenAI rejected the live requests with exhausted API quota. The user chose to keep the current public demo. This upgrade remains a draft and has not been merged or deployed. The failed attempt is recorded in evaluation/hosted-results-blocked.json; no hosted model-quality result is claimed.
 
 ## Runtime
 
