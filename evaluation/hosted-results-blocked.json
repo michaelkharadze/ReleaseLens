@@ -1,0 +1,126 @@
+{
+  "live": true,
+  "synthetic": true,
+  "heldOut": false,
+  "generatedAt": "2026-10-30T00:09:32.842Z",
+  "chatModel": "gpt-4.1-mini-2025-04-14",
+  "embeddingModel": "text-embedding-3-small",
+  "dimensions": 768,
+  "methodology": "Built Worker fetch interface with a local SQLite implementation of the D1 contract; real OpenAI embedding and Responses requests. Same authored development fixtures as the local benchmark, excluding the report-injection fixture because the hosted sample corpus is immutable. Does not establish deployed Workers behavior, held-out accuracy, or semantic faithfulness.",
+  "metrics": {
+    "attemptedCases": 12,
+    "completedModelResponses": 0
+  },
+  "cases": [
+    {
+      "id": "csv-direct",
+      "question": "What happens to large CSV exports?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: 0a8e4e3f-3794-4305-a507-d52d122a363d",
+      "result": null
+    },
+    {
+      "id": "auth-paraphrase",
+      "question": "Why do customers keep being asked to authenticate again when their session runs out?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: 49ee1749-7926-40e9-818d-3ef968ff3b77",
+      "result": null
+    },
+    {
+      "id": "webhook-paraphrase",
+      "question": "Which reports explain why our callback consumer processes the same event more than once?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: 3f52d8b1-8731-4739-b7b2-286880ab0b51",
+      "result": null
+    },
+    {
+      "id": "archived-search",
+      "question": "What is missing when customers search archived documents?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: eb403f31-3bee-4234-bc4b-59a7c868e848",
+      "result": null
+    },
+    {
+      "id": "billing",
+      "question": "What are customers reporting about paying an invoice with a credit card?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: aab5daac-e243-43f8-9b30-908954e52962",
+      "result": null
+    },
+    {
+      "id": "invite",
+      "question": "What happens to workspace invitation links before a teammate can accept them?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: 6f95710f-d899-47bf-837b-413616d517e8",
+      "result": null
+    },
+    {
+      "id": "release-notes",
+      "question": "Which v2.8.0 release note describes a change to auth refresh tokens?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: af3b0be9-a0b4-479d-bdaa-9cc0921cc977",
+      "result": null
+    },
+    {
+      "id": "download-paraphrase",
+      "question": "Our downloaded spreadsheet is incomplete after ten thousand records. What symptom has been reported?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: 282f6675-0fef-4c83-8406-41cfe422e75e",
+      "result": null
+    },
+    {
+      "id": "unsupported-finance",
+      "question": "What is the company's revenue forecast for next quarter?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: 526ca519-28af-42dd-a2f9-0d5f97c8669f",
+      "result": null
+    },
+    {
+      "id": "unsupported-mobile",
+      "question": "Which iOS camera crash was fixed in v2.8.0?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: 1c7c7d8f-e470-44d9-8181-d033ed30940e",
+      "result": null
+    },
+    {
+      "id": "unsupported-auth-code",
+      "question": "What exact HTTP status code did the authentication service return during the login loop?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: 65fa40d0-b41f-44e4-b063-c47d5fe69e9b",
+      "result": null
+    },
+    {
+      "id": "unsupported-fix",
+      "question": "Which commit SHA fixed the CSV truncation problem?",
+      "pass": false,
+      "rank": null,
+      "citationIntegrity": false,
+      "error": "The model request could not be completed. Please retry shortly. Reference: cffd6de8-85e7-4ff4-8687-29ba7af80fed",
+      "result": null
+    }
+  ],
+  "status": "blocked_by_api_quota",
+  "limitation": "OpenAI rejected all attempted model requests with RateLimitQuotaExhaustedError. No hosted model answer quality or retrieval accuracy was validated. Public deployment was not changed."
+}
